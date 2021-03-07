@@ -1,0 +1,177 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualNetworkAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.1.0.0/16"
+        },
+        "virtualNetworkName": {
+           "type": "string",
+           "defaultValue": "vnet"
+        },
+        "aksSubnetName": {
+            "type": "string",
+            "defaultValue": "aks"
+        },
+        "aksSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.1.1.0/24"
+        },
+        "firewallSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.1.2.0/24"
+        },
+        "bastionSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.1.3.0/27"
+        },
+        "jumpHostSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.1.3.64/27"
+        },
+        "dnsZoneName": {
+            "type": "string",
+            "defaultValue": "udacity"
+        }
+    },
+    "functions": [],
+    "variables": {
+         "aksSubnetNsgName": "[concat(parameters('aksSubnetName'),'-nsg')]",
+         "aksRouteTableName": "aks"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "[variables('aksSubnetNsgName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules":[]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "AdminWorkStation-NSG",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules":[]
+            }
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2020-05-01",
+            "location": "[resourceGroup().location]",
+            "name": "[variables('aksRouteTableName')]",
+            "properties":{}
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2020-05-01",
+            "location": "[resourceGroup().location]",
+            "name": "AdminWorkStation-RouteTable",
+            "properties":{}
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-05-01",
+            "name": "[parameters('virtualNetworkName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('aksSubnetNsgName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AdminWorkStation-NSG')]",
+                "[resourceId('Microsoft.Network/routeTables', variables('aksRouteTableName'))]",
+                "[resourceId('Microsoft.Network/routeTables', 'AdminWorkStation-RouteTable')]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('virtualNetworkAddressSpace')]"
+                    ]
+                },
+                "subnets":[
+                    {
+                        "name": "[parameters('aksSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('aksSubnetAddressSpace')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('aksSubnetNsgName'))]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', variables('aksRouteTableName'))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "AzureFirewallSubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('firewallSubnetAddressSpace')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('bastionSubnetAddressSpace')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "AdminWorkStationSubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('jumpHostSubnetAddressSpace')]"
+                        },
+                        "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'AdminWorkStation-NSG')]"
+                        },
+                        "routeTable": {
+                            "id": "[resourceId('Microsoft.Network/routeTables', 'AdminWorkStation-RouteTable')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2018-09-01",
+            "name": "[parameters('dnsZoneName')]",
+            "location": "global",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2018-09-01",
+            "name": "[concat(parameters('dnsZoneName'),'/',resourceGroup().name,'-',parameters('virtualNetworkName'))]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('dnsZoneName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "vnetName": {
+           "type": "string",
+           "value": "[parameters('virtualNetworkName')]"
+        },
+        "aksSubnetName": {
+            "type": "string",
+            "value": "[parameters('aksSubnetName')]"
+        },
+        "routeTableName": {
+            "type": "string",
+            "value": "[variables('aksRouteTableName')]"
+        }
+    }
+}

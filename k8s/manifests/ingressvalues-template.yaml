@@ -1,0 +1,7 @@
+controller:
+  publishService:
+    enabled: true
+  service:
+    loadBalancerIP: #{LOADBALANCER-IP}#
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"

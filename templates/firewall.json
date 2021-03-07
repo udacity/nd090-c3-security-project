@@ -1,0 +1,260 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "firewallName": {
+            "type": "string"
+        },
+        "virtualNetworkName": {
+            "type": "string"
+        },
+        "firewallPublicIpAddressName": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "firewallPublicIpAddress": {
+            "type": "string"
+        },
+        "ingressControllerIpAddress": {
+            "type": "string"
+        }
+    },
+    "functions": [],
+    "variables": {
+         "firewallPublicIpAddressId": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('firewallPublicIpAddressName'))]",
+         "azureFirewallSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetworkName'), 'AzureFirewallSubnet')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/azureFirewalls",
+            "name": "[parameters('firewallName')]",
+            "apiVersion": "2020-05-01",
+            "location":"[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "AZFW_VNet",
+                    "tier": "Standard"
+                },
+                "threatIntelMode": "Alert",
+                "ipConfigurations": [
+                    {
+                        "name": "[parameters('firewallPublicIpAddressName')]",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[variables('firewallPublicIpAddressId')]"
+                            },
+                            "subnet": {
+                                "id": "[variables('azureFirewallSubnetId')]"
+                            }
+                        }
+                    }
+                ],
+                "networkRuleCollections":[
+                    {
+                        "name": "time",
+                        "properties": {
+                            "priority": 101,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "aks node time sync rule",
+                                    "protocols": ["UDP"],
+                                    "sourceAddresses": ["*"],
+                                    "destinationAddresses": ["*"],
+                                    "destinationPorts": ["123"]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dns",
+                        "properties": {
+                            "priority": 102,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow network",
+                                    "protocols": ["Any"],
+                                    "sourceAddresses": ["*"],
+                                    "destinationAddresses": ["*"],
+                                    "destinationPorts": ["53"]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "servicetags",
+                        "properties": {
+                            "priority": 110,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow service tags",
+                                    "protocols": ["Any"],
+                                    "sourceAddresses": ["*"],
+                                    "destinationAddresses": [
+                                        "AzureContainerRegistry",
+                                        "MicrosoftContainerRegistry",
+                                        "AzureActiveDirectory",
+                                        "AzureMonitor"
+                                    ],
+                                    "destinationPorts": ["*"]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "hcp",
+                        "properties": {
+                            "priority": 120,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow aks link access to masters",
+                                    "protocols": ["UDP"],
+                                    "sourceAddresses": ["*"],
+                                    "destinationAddresses": ["AzureCloud.EastUS"],
+                                    "destinationPorts": ["1194"]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "aks",
+                        "properties": {
+                            "priority": 300,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow aks outbound",
+                                    "protocols": ["TCP"],
+                                    "sourceAddresses": ["*"],
+                                    "destinationAddresses": ["AzureCloud.EastUS"],
+                                    "destinationPorts": ["443", "9000"]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "applicationRuleCollections": [
+                    {
+                        "name": "osupdates",
+                        "properties": {
+                            "priority": 102,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow network",
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Http",
+                                            "port": 80
+                                        },
+                                        {
+                                            "protocolType": "Https",
+                                            "port": 443
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "download.opensuse.org",
+                                        "security.ubuntu.com",
+                                        "packages.microsoft.com",
+                                        "azure.archive.ubuntu.com",
+                                        "changelogs.ubuntu.com",
+                                        "snapcraft.io",
+                                        "api.snapcraft.io",
+                                        "motd.ubuntu.com",
+                                        "usage.projectcalico.org"
+                                    ],
+                                    "sourceAddresses": ["*"]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "aks",
+                        "properties": {
+                            "priority": 101,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "aks",
+                                    "protocols": [
+                                        {
+                                            "port": 80,
+                                            "protocolType": "Http"
+                                        },
+                                        {
+                                            "port": 443,
+                                            "protocolType": "Https"
+                                        }
+                                    ],
+                                    "fqdnTags": [
+                                        "AzureKubernetesService"
+                                    ],
+                                    "sourceAddresses": [
+                                        "10.1.1.0/24"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "natRuleCollections": [
+                    {
+                        "name": "frontdoortok8s",
+                        "properties": {
+                            "priority": 100,
+                            "action": {
+                                "type": "Dnat"
+                            },
+                            "rules": [
+                                {
+                                    "name": "k8s",
+                                    "protocols": [
+                                        "TCP"
+                                    ],
+                                    "translatedAddress": "[parameters('ingressControllerIpAddress')]",
+                                    "translatedPort": "80",
+                                    "sourceAddresses": [
+                                    ],
+                                    "sourceIpGroups": [
+                                        "[resourceId('Microsoft.Network/ipGroups','AzureFrontDoorBackendIPGroup')]"
+                                    ],
+                                    "destinationAddresses": [
+                                        "[parameters('firewallPublicIpAddress')]"
+                                    ],
+                                    "destinationPorts": [
+                                        "80"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "firewallPrivateIPAddress": {
+            "type": "string",
+            "value": "[reference(parameters('firewallName')).ipConfigurations[0].properties.privateIPAddress]"
+        }
+    }
+}

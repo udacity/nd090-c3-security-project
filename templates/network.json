@@ -124,13 +124,13 @@
                     {
                         "name": "AdminWorkStationSubnet",
                         "properties": {
-                            "addressPrefix": "[parameters('jumpHostSubnetAddressSpace')]"
-                        },
-                        "networkSecurityGroup": {
+                            "addressPrefix": "[parameters('jumpHostSubnetAddressSpace')]",
+                            "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'AdminWorkStation-NSG')]"
-                        },
-                        "routeTable": {
-                            "id": "[resourceId('Microsoft.Network/routeTables', 'AdminWorkStation-RouteTable')]"
+                            },
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', 'AdminWorkStation-RouteTable')]"
+                            }
                         }
                     }
                 ]

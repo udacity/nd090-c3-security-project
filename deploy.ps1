@@ -10,7 +10,8 @@ $spnClientId = ""
 $spnClientSecret = ""
 
 az login
-
+az account set --subscription $subscriptionID
+az group create --name $resourceGroupName --location $location
 $spn = az ad sp create-for-rbac --name $spnName `
         --role Contributor `
         --scopes /subscriptions/$subscriptionID/resourceGroups/$resourceGroupName `
@@ -24,13 +25,13 @@ Function CreateUsersAndGroups()
     $secopsGroup = az ad group create --displayname secops --mail-nickname secops --query '{Id:objectId}' -o json | ConvertFrom-Json
     $dbAdminGroup = az ad group create --displayname dbadmin --mail-nickname dbadmin --query '{Id:objectId}' -o json | ConvertFrom-Json
 
-    $devopsUser = az ad user create --display-name 'Dev Ops' --password 'Pass123!' --user-principal-name $ 'devops@'+$domainName --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $devopsUser = az ad user create --display-name 'Dev Ops' --password 'Pass123!' --user-principal-name $ 'devops@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $devopsGroup.Id --member-id $devopsUser.Id
 
-    $secopsUser = az ad user create --display-name 'Sec Ops' --password 'Pass123!' --user-principal-name $ 'secops@'+$domainName --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $secopsUser = az ad user create --display-name 'Sec Ops' --password 'Pass123!' --user-principal-name $ 'secops@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $secopsGroup.Id --member-id $secopsUser.Id
 
-    $dbAdminUser = az ad user create --display-name 'Db Admin' --password 'Pass123!' --user-principal-name $ 'dbadmin@'+$domainName --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $dbAdminUser = az ad user create --display-name 'Db Admin' --password 'Pass123!' --user-principal-name $ 'dbadmin@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $dbAdminGroup.Id --member-id $dbAdminUser.Id
 }
 
@@ -38,11 +39,9 @@ $ingressLoadBalancerIpAddress = "10.1.1.100"
 $dnsZoneName = "udacity.com"
 $aksClusterName = "azsecurity"
 $azFirewallName = "azfw"
-$adminWorkStationAdminPassword = "" #set it at runtime
-$sqlServerAdminPassword = "" #set it at runtime
-
-az account set --subscription $subscriptionID
-az group create --name $resourceGroupName --location $location
+$adminWorkStationAdminPassword = "azuresecurity123!" #set it at runtime
+$sqlServerAdminPassword = "azuresecurity123!" #set it at runtime
+$vnetName = "vnet"
 
 Function ToBase64($value) {
     return [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($value))
@@ -141,5 +140,18 @@ Function DeployK8sResources() {
    #Remove-Item -Path "./config"
    Remove-Item -Path "./k8s/manifests/externaldns/deploy.yaml"
 }
+
+CreateUsersAndGroups
+$firewallPublicIPAddressDetail = DeployPublicIpAddress -azFirewallName $azFirewallName
+$firewallPublicIPAddress = $firewallPublicIPAddressDetail.firewallIpAddress
+$firewallPublicIPAddressName = $firewallPublicIPAddressDetail.name
+$networkDetail = DeployNetwork
+$vnetName = $networkDetail.vnetName
+$routeTableName = $networkDetail.routeTableName
+$aksSubnetName = $networkDetail.aksSubnetName
+$firewallPrivateIPAddress = DeployFirewall -azFirewallName $azFirewallName -vnetName $vnetName -firewallPublicIpAddressName $firewallPublicIPAddressName -firewallPublicIpAddress $firewallPublicIPAddress
+DeployRoutes -routeTableName $routeTableName -firewallPrivateIPAddress $firewallPrivateIPAddress
+DeployAll -firewallPublicIpAddress $firewallPublicIPAddress -vnetName $vnetName -aksSubnetName $aksSubnetName -azFirewallName $azFirewallName
+DeployK8sResources
 
 

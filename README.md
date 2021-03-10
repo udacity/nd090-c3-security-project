@@ -1,55 +1,9 @@
-# README Template
+Please execute **deploy.ps1** once the subscription is ready. command to run
+  > ./deploy.ps1 -tenantID &lt;Azure-Tenant-ID&gt; -subscriptionID &lt;Azure-Subscription-ID&gt; -domainName &lt;Azure-AD-Domain-Name&gt;
 
-Below is a template provided for use when building your README file for students.
+Please follow this  [link](https://azurecostmonitor.uservoice.com/knowledgebase/articles/805068-find-your-azure-active-directory-domain) to get the Azure-AD-Domain-Name  
 
-# Project Title
+Please follow this [link](https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-how-to-find-tenant) to get Azure-Tenant-ID
 
-Project description goes here.
-
-## Getting Started
-
-Instructions for how to get a copy of the project running on your local machine.
-
-### Dependencies
-
-```
-Examples here
-```
-
-### Installation
-
-Step by step explanation of how to get a dev environment running.
-
-List out the steps
-
-```
-Give an example here
-```
-
-## Testing
-
-Explain the steps needed to run any automated tests
-
-### Break Down Tests
-
-Explain what each test does and why
-
-```
-Examples here
-```
-
-## Project Instructions
-
-This section should contain all the student deliverables for this project.
-
-## Built With
-
-* [Item1](www.item1.com) - Description of item
-* [Item2](www.item2.com) - Description of item
-* [Item3](www.item3.com) - Description of item
-
-Include all items used to build project.
-
-## License
-
-[License](LICENSE.txt)
+Please follow this [link](https://docs.bitnami.com/azure/faq/administration/find-subscription-id/)
+to get Azure-Subscription-ID

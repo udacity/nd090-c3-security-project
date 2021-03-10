@@ -1,6 +1,7 @@
-$tenantID = ''
-$subscriptionID = ''
-$domainName = '' #<username>.onmicrosoft.com
+Param([String]$tenantID,
+[String]$subscriptionID,
+[String]$domainName)
+
 
 $resourceGroupName = 'udacity'
 $location = 'eastus'

@@ -7,17 +7,18 @@ $resourceGroupName = 'udacity'
 $location = 'eastus'
 $spnName = 'udacity'
 
-$spnClientId = ""
-$spnClientSecret = ""
 
-az login
+$spnClientId = "0aa4dd24-a1cb-4d88-a928-c0175261cdd2"
+$spnClientSecret = "JL6N3-.sI02GY-zCHA0vcLSdlnATE9i~v6"
 
-$spn = az ad sp create-for-rbac --name $spnName `
-        --role Contributor `
-        --scopes /subscriptions/$subscriptionID/resourceGroups/$resourceGroupName `
-        --query '{ClientId:appId,ClientSecret:password}' -o json | ConvertFrom-Json
-$spnClientId = $spn.ClientId
-$spnClientSecret = $spn.ClientSecret
+az login --service-principal -u $spnClientId -p $spnClientSecret -t $tenantID
+
+# $spn = az ad sp create-for-rbac --name $spnName `
+#         --role Contributor `
+#         --scopes /subscriptions/$subscriptionID/resourceGroups/$resourceGroupName `
+#         --query '{ClientId:appId,ClientSecret:password}' -o json | ConvertFrom-Json
+# $spnClientId = $spn.ClientId
+# $spnClientSecret = $spn.ClientSecret
 
 Function CreateUsersAndGroups()
 {
@@ -143,4 +144,15 @@ Function DeployK8sResources() {
    Remove-Item -Path "./k8s/manifests/externaldns/deploy.yaml"
 }
 
-
+#CreateUsersAndGroups
+$firewallPublicIPAddressDetail = DeployPublicIpAddress -azFirewallName $azFirewallName
+$firewallPublicIPAddress = $firewallPublicIPAddressDetail.firewallIpAddress
+$firewallPublicIPAddressName = $firewallPublicIPAddressDetail.name
+$networkDetail = DeployNetwork
+$vnetName = $networkDetail.vnetName
+$routeTableName = $networkDetail.routeTableName
+$aksSubnetName = $networkDetail.aksSubnetName
+$firewallPrivateIPAddress = DeployFirewall -azFirewallName $azFirewallName -vnetName $vnetName -firewallPublicIpAddressName $firewallPublicIPAddressName -firewallPublicIpAddress $firewallPublicIPAddress
+DeployRoutes -routeTableName $routeTableName -firewallPrivateIPAddress $firewallPrivateIPAddress
+DeployAll -firewallPublicIpAddress $firewallPublicIPAddress -vnetName $vnetName -aksSubnetName $aksSubnetName -azFirewallName $azFirewallName
+DeployK8sResources

@@ -10,15 +10,16 @@ $spnName = 'udacity'
 $spnClientId = ""
 $spnClientSecret = ""
 
-az login
+az login --service-principal -u $spnClientId -p $spnClientSecret -t $tenantID
 az account set --subscription $subscriptionID
-az group create --name $resourceGroupName --location $location
-$spn = az ad sp create-for-rbac --name $spnName `
-        --role Contributor `
-        --scopes /subscriptions/$subscriptionID/resourceGroups/$resourceGroupName `
-        --query '{ClientId:appId,ClientSecret:password}' -o json | ConvertFrom-Json
-$spnClientId = $spn.ClientId
-$spnClientSecret = $spn.ClientSecret
+
+ $spn = az ad sp create-for-rbac --name $spnName `
+         --role Contributor `
+         --scopes /subscriptions/$subscriptionID/resourceGroups/$resourceGroupName `
+         --query '{ClientId:appId,ClientSecret:password}' -o json | ConvertFrom-Json
+ $spnClientId = $spn.ClientId
+ $spnClientSecret = $spn.ClientSecret
+
 
 Function CreateUsersAndGroups()
 {
@@ -85,6 +86,14 @@ Function DeployFirewall($azFirewallName, $vnetName, $firewallPublicIpAddressName
 
 }
 
+Function DeployAdminWorkstation($adminWorkStationAdminPassword, $vnetName) {
+    Write-Host 'Deploying AdminWorkstation'
+    $outputs = az deployment group create --resource-group $resourceGroupName --template-file ./templates/vm.json `
+                            --parameters adminWorkStationPassword=$adminWorkStationAdminPassword `
+                            --parameters virtualNetworkName=$vnetName
+    Write-Host 'Deployed AdminWorkstation'
+}
+
 Function DeployRoutes($routeTableName, $firewallPrivateIPAddress) {
     Write-Host 'Deploying Routes'
     $outputs = az deployment group create --resource-group $resourceGroupName --template-file ./templates/routes.json `
@@ -142,6 +151,7 @@ Function DeployK8sResources() {
    Remove-Item -Path "./k8s/manifests/externaldns/deploy.yaml"
 }
 
+
 CreateUsersAndGroups
 $firewallPublicIPAddressDetail = DeployPublicIpAddress -azFirewallName $azFirewallName
 $firewallPublicIPAddress = $firewallPublicIPAddressDetail.firewallIpAddress
@@ -152,7 +162,6 @@ $routeTableName = $networkDetail.routeTableName
 $aksSubnetName = $networkDetail.aksSubnetName
 $firewallPrivateIPAddress = DeployFirewall -azFirewallName $azFirewallName -vnetName $vnetName -firewallPublicIpAddressName $firewallPublicIPAddressName -firewallPublicIpAddress $firewallPublicIPAddress
 DeployRoutes -routeTableName $routeTableName -firewallPrivateIPAddress $firewallPrivateIPAddress
+DeployAdminWorkstation -adminWorkStationAdminPassword $adminWorkStationAdminPassword -vnetName $vnetName
 DeployAll -firewallPublicIpAddress $firewallPublicIPAddress -vnetName $vnetName -aksSubnetName $aksSubnetName -azFirewallName $azFirewallName
 DeployK8sResources
-
-

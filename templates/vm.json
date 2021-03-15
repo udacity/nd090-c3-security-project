@@ -1,0 +1,110 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualNetworkName": {
+            "type": "string"
+        },
+        "adminWorkStationPassword": {
+            "type": "securestring",
+            "minLength": 12,
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-06-01",
+            "name": "AdminWorkstationPIP",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Basic"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "AdminWorkstation"
+                }
+            }
+        },
+        {
+            "name": "AdminWorkStation-NetworkInterface",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+            ],
+            "tags": {
+                "displayName": "Admin Workstation Interface"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'AdminWorkstationPIP')]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), 'AdminWorkStationSubnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "AdminWorkStation",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'AdminWorkStation-NetworkInterface')]"
+            ],
+            "plan": {
+                "name": "pro-preview",
+                "product": "windows10preview",
+                "publisher": "microsoft-hyperv"
+            },
+            "tags": {
+                "displayName": "JumpHost"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS1_v2"
+                },
+                "osProfile": {
+                    "computerName": "JumpHost",
+                    "adminUsername": "azureuser",
+                    "adminPassword": "[parameters('adminWorkStationPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "microsoft-hyperv",
+                        "offer": "windows10preview",
+                        "sku": "pro-preview",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "WorkStationOSDisk",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'AdminWorkStation-NetworkInterface')]"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

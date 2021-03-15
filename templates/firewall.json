@@ -214,6 +214,39 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "name": "dockerhub",
+                        "properties": {
+                            "priority": 200,
+                            "action": {
+                                "type": "Allow"
+                            },
+                            "rules": [
+                                {
+                                    "name": "allow network",
+                                    "protocols": [
+                                        {
+                                            "protocolType": "Http",
+                                            "port": 80
+                                        },
+                                        {
+                                            "port": 443,
+                                            "protocolType": "Https"
+                                        }
+                                    ],
+                                    "targetFqdns": [
+                                        "*auth.docker.io",
+                                        "*cloudflare.docker.io",
+                                        "k8s.gcr.io",
+                                        "storage.googleapis.com",
+                                        "*cloudflare.docker.com",
+                                        "*registry-1.docker.io"
+                                    ],
+                                    "sourceAddresses": ["*"]
+                                }
+                            ]
+                        }
                     }
                 ],
                 "natRuleCollections": [

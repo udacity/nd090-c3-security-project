@@ -1,6 +1,8 @@
 Param([String]$tenantID,
 [String]$subscriptionID,
-[String]$domainName)
+[String]$domainName,
+[Parameter(Mandatory=$false)]
+[Switch]$usermode)
 
 
 $resourceGroupName = 'udacity'
@@ -10,7 +12,15 @@ $spnName = 'udacity'
 $spnClientId = ""
 $spnClientSecret = ""
 
-az login --service-principal -u $spnClientId -p $spnClientSecret -t $tenantID
+if($usermode -eq $false)
+{
+    az login --service-principal -u $spnClientId -p $spnClientSecret -t $tenantID
+}
+else 
+{
+    az login
+}
+
 az account set --subscription $subscriptionID
 
  $spn = az ad sp create-for-rbac --name $spnName `
@@ -35,6 +45,10 @@ Function CreateUsersAndGroups()
 
     $dbAdminUser = az ad user create --display-name 'Db Admin' --password 'Pass123!' --user-principal-name $ 'dbadmin@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $dbAdminGroup.Id --member-id $dbAdminUser.Id
+
+    az role assignment create --role "User Access Administrator" --assignee $secopsGroup.Id --subscription $subscriptionID
+    az role assignment create --role "Contributor" --assignee $devopsGroup.Id --subscription $subscriptionID
+    az role assignment create --role "Reader" --assignee $dbAdminGroup.Id --subscription $subscriptionID
 }
 
 $ingressLoadBalancerIpAddress = "10.1.1.100"

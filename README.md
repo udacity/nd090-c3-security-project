@@ -1,6 +1,6 @@
 ## Deploying "The Juice Store"  Infrastructure
 
-- Go the website https://github.com/udacity/nd090-c3-security
+- Go to the github repository https://github.com/udacity/nd090-c3-security
 - Clone the repository in to your local
 - Run the powershell script deploy.ps1 under the repository
 - please follow directions under "Authenticating with User Login" section to run the script as user.

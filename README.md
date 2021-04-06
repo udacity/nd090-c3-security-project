@@ -1,4 +1,10 @@
-Please execute **deploy.ps1** once the subscription is ready. command to run
+## Deploying "The Juice Store"  Infrastructure
+
+- Go to the github repository https://github.com/udacity/nd090-c3-security
+- Clone the repository in to your local
+- Run the powershell script deploy.ps1 under the repository
+- please follow directions under "Authenticating with User Login" section to run the script as user.
+
 ## Authenticating with existing SPN
   > ./deploy.ps1 -tenantID &lt;Azure-Tenant-ID&gt; -subscriptionID &lt;Azure-Subscription-ID&gt; -domainName &lt;Azure-AD-Domain-Name&gt;
 

@@ -33,17 +33,23 @@ az account set --subscription $subscriptionID
 
 Function CreateUsersAndGroups()
 {
-    $devopsGroup = az ad group create --displayname devops --mail-nickname devops --query '{Id:objectId}' -o json | ConvertFrom-Json
-    $secopsGroup = az ad group create --displayname secops --mail-nickname secops --query '{Id:objectId}' -o json | ConvertFrom-Json
-    $dbAdminGroup = az ad group create --displayname dbadmin --mail-nickname dbadmin --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $devopsGroup = az ad group create --display-name 'devops' --mail-nickname 'devops' --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $secopsGroup = az ad group create --display-name 'secops' --mail-nickname 'secops' --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $dbAdminGroup = az ad group create --display-name 'dbadmin' --mail-nickname 'dbadmin' --query '{Id:objectId}' -o json | ConvertFrom-Json
 
-    $devopsUser = az ad user create --display-name 'Dev Ops' --password 'Pass123!' --user-principal-name $ 'devops@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $username = 'devops@'+$domainName
+    Write-Host $username
+    $devopsUser = az ad user create --display-name 'Dev Ops' --password 'Pass123!' --user-principal-name $username --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $devopsGroup.Id --member-id $devopsUser.Id
 
-    $secopsUser = az ad user create --display-name 'Sec Ops' --password 'Pass123!' --user-principal-name $ 'secops@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $username = 'secops@'+$domainName
+    Write-Host $username
+    $secopsUser = az ad user create --display-name 'Sec Ops' --password 'Pass123!' --user-principal-name $username --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $secopsGroup.Id --member-id $secopsUser.Id
 
-    $dbAdminUser = az ad user create --display-name 'Db Admin' --password 'Pass123!' --user-principal-name $ 'dbadmin@$domainName' --query '{Id:objectId}' -o json | ConvertFrom-Json
+    $username = 'dbadmin@'+$domainName
+    Write-Host $username
+    $dbAdminUser = az ad user create --display-name 'Db Admin' --password 'Pass123!' --user-principal-name $username --query '{Id:objectId}' -o json | ConvertFrom-Json
     az ad group member add --group $dbAdminGroup.Id --member-id $dbAdminUser.Id
 
     az role assignment create --role "User Access Administrator" --assignee $secopsGroup.Id --subscription $subscriptionID
